@@ -31,4 +31,6 @@
 #define LEFT_MOTOR_PWM          0
 #define RIGHT_MOTOR_PWM         1
 
+#define GYRO_CHANNEL			0
+
 #endif
