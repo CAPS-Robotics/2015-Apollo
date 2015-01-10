@@ -12,6 +12,10 @@ Gyro            *gyro;
 bool             driveRun;
 pthread_t        driveThread;
 
+int sgn(double num) {
+	return num == 0 ? 0 : num / fabs(num);
+}
+
 class Seabiscuit : public IterativeRobot
 {
 public:
