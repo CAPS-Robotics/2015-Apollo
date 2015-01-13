@@ -16,6 +16,10 @@ int sgn(double num) {
 	return num == 0 ? 0 : num / fabs(num);
 }
 
+float safe_angle(float angle) {
+	return fmod(angle, 360);
+}
+
 class Seabiscuit : public IterativeRobot
 {
 public:

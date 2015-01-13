@@ -28,9 +28,10 @@ void Seabiscuit::DisabledInit() {
 }
 
 void* driveFunc(void* arg) {
-	float Kp = 0.024000;//I
-	float Ki = 0.021000;//Love
-	float Kd = 0.000420;//Integrals
+	float Kp = 0.024000; //A
+	float Ki = 0.021000; //O
+	float Kd = 0.000420; //L
+	//mail
 	SmartDashboard::PutString("DB/String 0", std::to_string(Kp));
 	SmartDashboard::PutString("DB/String 1", std::to_string(Ki));
 	SmartDashboard::PutString("DB/String 2", std::to_string(Kd));
@@ -43,8 +44,12 @@ void* driveFunc(void* arg) {
 	float rCurrentSpeed = 0; //lel
 
 	bool precisionMode = false;
+	float precisionFactor = 0.75f;
 
 	float joyDifference = joystick->GetRawAxis(JOY_AXIS_LY) - joystick->GetRawAxis(JOY_AXIS_RY);
+	float alignmentAngle = 0;
+	float alignmentOffset = 0;
+	float correctionFactor = 360.f;
 
 	double oldtime = GetTime();
 	while (true) {
@@ -57,22 +62,22 @@ void* driveFunc(void* arg) {
 			//saving K values in dashboard q:^ )
 
 			precisionMode = joystick->GetRawButton(JOY_BTN_RBM);
-			if (precisionMode) {
+			/*if (precisionMode) {
 				//teehee
 				Kp /= 2;
 				Ki /= 2;
 				Kd /= 2;
-			}
+			}*/
 
-			/*joyDifference = joystick->GetRawAxis(JOY_AXIS_LY) - joystick->GetRawAxis(JOY_AXIS_RY);
-			if (!(joyDifference >= -0.07 && joyDifference <= 0.07)) {
-				if (fabs(gyro->GetAngle()) > 0.2)
-					gyro->Reset();
+			joyDifference = joystick->GetRawAxis(JOY_AXIS_LY) - joystick->GetRawAxis(JOY_AXIS_RY);
+			if (!(joyDifference >= -0.05 && joyDifference <= 0.05)) {
 				SmartDashboard::PutString("DB/String 3", "Waiting for alignment...");
+				alignmentAngle = safe_angle(gyro->GetAngle());
 			}
 			else {
-				SmartDashboard::PutString("DB/String 3", std::to_string(gyro->GetAngle()));
-			}*/
+				alignmentOffset = alignmentAngle - safe_angle(gyro->GetAngle());
+				SmartDashboard::PutString("DB/String 3", std::to_string(alignmentOffset));
+			}
 
 			//Left PID loop
 			float lCurrentError = joystick->GetRawAxis(JOY_AXIS_LY) - lCurrentSpeed;
@@ -96,10 +101,12 @@ void* driveFunc(void* arg) {
 			SmartDashboard::PutString("DB/String 8", std::to_string(rCurrentSpeed));
 
 			if (precisionMode) {
-				drive->TankDrive((lCurrentSpeed/* - sgn(lCurrentSpeed) * (gyro->GetAngle() / 360.f)*/) / 1.5f, (rCurrentSpeed/* + sgn(rCurrentSpeed) * (gyro->GetAngle() / 360.f)*/) / 1.5f);
+				drive->TankDrive((lCurrentSpeed - (sgn(lCurrentSpeed) * (alignmentOffset / correctionFactor))) * precisionFactor,
+						(rCurrentSpeed + (sgn(rCurrentSpeed) * (alignmentOffset / correctionFactor))) * precisionFactor);
 			}
 			else {
-				drive->TankDrive(lCurrentSpeed/* - sgn(lCurrentSpeed) * (gyro->GetAngle() / 360.f)*/, rCurrentSpeed/* + sgn(rCurrentSpeed) * (gyro->GetAngle() / 360.f)*/);
+				drive->TankDrive(lCurrentSpeed - (sgn(lCurrentSpeed) * (alignmentOffset / correctionFactor)),
+						rCurrentSpeed + (sgn(rCurrentSpeed) * (alignmentOffset / correctionFactor)));
 			}
 		}
 		//drive->TankDrive(joystick->GetRawAxis(JOY_AXIS_LY),joystick->GetRawAxis(JOY_AXIS_RY));
