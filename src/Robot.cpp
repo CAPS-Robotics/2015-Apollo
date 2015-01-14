@@ -93,7 +93,7 @@ void* driveFunc(void* arg) {
 			SmartDashboard::PutString("DB/String 8", std::to_string(rCurrentSpeed));
 
 			joyDifference = joystick->GetRawAxis(JOY_AXIS_LY) - joystick->GetRawAxis(JOY_AXIS_RY);
-			if (fabs(joyDifference) > 0.04) {
+			if (fabs(joyDifference) > 0.03) {
 				SmartDashboard::PutString("DB/String 3", "Waiting for alignment...");
 				SmartDashboard::PutString("DB/String 4", "Waiting for alignment...");
 				alignmentAngle = gyro->GetAngle();
@@ -113,11 +113,7 @@ void* driveFunc(void* arg) {
 							-sgn(lCurrentSpeed) * (alignmentOffset / correctionFactor));
 				} else {
 					drive->Drive((lCurrentSpeed + rCurrentSpeed) / 2.f,
-<<<<<<< HEAD
 							-sgn(lCurrentSpeed) * (alignmentOffset / correctionFactor));
-=======
-								  correctionFactor * alignmentOffset);
->>>>>>> FETCH_HEAD
 				}
 			}
 		}
