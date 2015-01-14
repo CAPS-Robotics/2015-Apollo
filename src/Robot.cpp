@@ -107,13 +107,14 @@ void* driveFunc(void* arg) {
 			} else {
 				alignmentOffset = alignmentAngle - gyro->GetAngle();
 				SmartDashboard::PutString("DB/String 3", std::to_string(alignmentAngle));
-				SmartDashboard::PutString("DB/String 4", std::to_string(safe_angle(gyro->GetAngle())));
+				SmartDashboard::PutString("DB/String 4", std::to_string(gyro->GetAngle()));
 				if (precisionMode) {
 					drive->Drive((lCurrentSpeed + rCurrentSpeed) / 2.f * precisionFactor,
 								  correctionFactor * alignmentOffset);
 				} else {
 					drive->Drive((lCurrentSpeed + rCurrentSpeed) / 2.f,
 								  correctionFactor * alignmentOffset);
+				}
 			}
 		}
 		oldtime = ctime;
