@@ -20,6 +20,10 @@ float safe_angle(float angle) {
 	return fmod(angle, 360);
 }
 
+float safe_motor(float power) {
+	return fabs(power) > 1 ? sgn(power) : power;
+}
+
 class Seabiscuit : public IterativeRobot
 {
 public:
