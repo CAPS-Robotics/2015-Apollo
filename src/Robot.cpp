@@ -113,7 +113,11 @@ void* driveFunc(void* arg) {
 							-sgn(lCurrentSpeed) * (alignmentOffset / correctionFactor));
 				} else {
 					drive->Drive((lCurrentSpeed + rCurrentSpeed) / 2.f,
+<<<<<<< HEAD
 							-sgn(lCurrentSpeed) * (alignmentOffset / correctionFactor));
+=======
+								  correctionFactor * alignmentOffset);
+>>>>>>> FETCH_HEAD
 				}
 			}
 		}
