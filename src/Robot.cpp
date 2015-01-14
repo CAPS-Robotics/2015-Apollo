@@ -110,10 +110,10 @@ void* driveFunc(void* arg) {
 				SmartDashboard::PutString("DB/String 4", std::to_string(safe_angle(gyro->GetAngle())));
 				if (precisionMode) {
 					drive->Drive((lCurrentSpeed + rCurrentSpeed) / 2.f * precisionFactor,
-								  -correctionFactor * alignmentOffset);
+								  correctionFactor * alignmentOffset);
 				} else {
 					drive->Drive((lCurrentSpeed + rCurrentSpeed) / 2.f,
-								  -correctionFactor * alignmentOffset);
+								  correctionFactor * alignmentOffset);
 			}
 		}
 		oldtime = ctime;
