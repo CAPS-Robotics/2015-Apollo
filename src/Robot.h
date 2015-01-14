@@ -16,10 +16,6 @@ int sgn(double num) {
 	return num == 0 ? 0 : num / fabs(num);
 }
 
-float safe_angle(float angle) {
-	return fmod(angle, 360);
-}
-
 float safe_motor(float power) {
 	return fabs(power) > 1 ? sgn(power) : power;
 }

@@ -71,18 +71,6 @@ void* driveFunc(void* arg) {
 				Kd /= 2;
 			}*/
 
-			joyDifference = joystick->GetRawAxis(JOY_AXIS_LY) - joystick->GetRawAxis(JOY_AXIS_RY);
-			if (!(joyDifference >= -0.09 && joyDifference <= 0.09)) {
-				SmartDashboard::PutString("DB/String 3", "Waiting for alignment...");
-				SmartDashboard::PutString("DB/String 4", "Waiting for alignment...");
-				alignmentAngle = safe_angle(gyro->GetAngle());
-			}
-			else {
-				alignmentOffset = alignmentAngle - safe_angle(gyro->GetAngle());
-				SmartDashboard::PutString("DB/String 3", std::to_string(alignmentAngle));
-				SmartDashboard::PutString("DB/String 4", std::to_string(safe_angle(gyro->GetAngle())));
-			}
-
 			//Left PID loop
 			float lCurrentError = joystick->GetRawAxis(JOY_AXIS_LY) - lCurrentSpeed;
 			lPIDIntegral += lPIDError * (ctime - oldtime);
@@ -104,16 +92,30 @@ void* driveFunc(void* arg) {
 			SmartDashboard::PutString("DB/String 7", std::to_string(lCurrentSpeed));
 			SmartDashboard::PutString("DB/String 8", std::to_string(rCurrentSpeed));
 
-			if (precisionMode) {
-				drive->TankDrive(safe_motor(lCurrentSpeed + (/*sgn(lCurrentSpeed) * */(alignmentOffset / correctionFactor))) * precisionFactor,
-						safe_motor(rCurrentSpeed - (/*sgn(rCurrentSpeed) * */(alignmentOffset / correctionFactor))) * precisionFactor);
-			}
-			else {
-				drive->TankDrive(lCurrentSpeed + (/*sgn(lCurrentSpeed) * */(alignmentOffset / correctionFactor)),
-						rCurrentSpeed - (/*sgn(rCurrentSpeed) * */(alignmentOffset / correctionFactor)));
+			joyDifference = joystick->GetRawAxis(JOY_AXIS_LY) - joystick->GetRawAxis(JOY_AXIS_RY);
+			if (fabs(joyDifference) > 0.09) {
+				SmartDashboard::PutString("DB/String 3", "Waiting for alignment...");
+				SmartDashboard::PutString("DB/String 4", "Waiting for alignment...");
+				alignmentAngle = gyro->GetAngle();
+				if (precisionMode) {
+					drive->TankDrive(lCurrentSpeed * precisionFactor,
+									 rCurrentSpeed * precisionFactor);
+				} else {
+					drive->TankDrive(lCurrentSpeed,
+									 rCurrentSpeed);
+				}
+			} else {
+				alignmentOffset = alignmentAngle - gyro->GetAngle();
+				SmartDashboard::PutString("DB/String 3", std::to_string(alignmentAngle));
+				SmartDashboard::PutString("DB/String 4", std::to_string(safe_angle(gyro->GetAngle())));
+				if (precisionMode) {
+					drive->Drive((lCurrentSpeed + rCurrentSpeed) / 2.f * precisionFactor,
+								  -correctionFactor * alignmentOffset);
+				} else {
+					drive->Drive((lCurrentSpeed + rCurrentSpeed) / 2.f,
+								  -correctionFactor * alignmentOffset);
 			}
 		}
-		//drive->TankDrive(joystick->GetRawAxis(JOY_AXIS_LY),joystick->GetRawAxis(JOY_AXIS_RY));
 		oldtime = ctime;
 	}
 }
