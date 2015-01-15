@@ -29,20 +29,22 @@ void* driveFunc(void* arg) {
 	float Kp = 0.024000; //A
 	float Ki = 0.021000; //O
 	float Kd = 0.000420; //L
+
 	//mail
+
 	SmartDashboard::PutString("DB/String 0", std::to_string(Kp));
 	SmartDashboard::PutString("DB/String 1", std::to_string(Ki));
 	SmartDashboard::PutString("DB/String 2", std::to_string(Kd));
 
 	float xPIDError = 0;
 	float xPIDIntegral = 0;
-	float xCurrentSpeed = 0; //top
+	float xCurrentSpeed = 0;
 	float yPIDError = 0;
 	float yPIDIntegral = 0;
-	float yCurrentSpeed = 0; //lel
+	float yCurrentSpeed = 0;
 	float zPIDError = 0;
 	float zPIDIntegral = 0;
-	float zCurrentSpeed = 0; //lel
+	float zCurrentSpeed = 0;
 
 	bool precisionMode = false;
 	float precisionFactor = 0.75f;
