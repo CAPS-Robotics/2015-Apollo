@@ -5,16 +5,12 @@
 Seabiscuit::~Seabiscuit() {
 	delete drive;
 	delete joystick;
-	delete gyro;
 }
 
 void Seabiscuit::RobotInit() {
-	drive = new RobotDrive(LEFT_MOTOR_PWM, RIGHT_MOTOR_PWM);
+	drive = new RobotDrive(FRONT_LEFT_MOTOR_PWM, REAR_LEFT_MOTOR_PWM,
+						   FRONT_RIGHT_MOTOR_PWM, REAR_RIGHT_MOTOR_PWM);
 	joystick = new Joystick(JOY_PORT_0);
-	gyro = new Gyro(GYRO_CHANNEL);
-	//gyro->InitGyro();
-	//gyro->SetSensitivity(0.05);
-	gyro->Reset();
 
 	drive->SetSafetyEnabled(false);
 
@@ -38,24 +34,21 @@ void* driveFunc(void* arg) {
 	SmartDashboard::PutString("DB/String 1", std::to_string(Ki));
 	SmartDashboard::PutString("DB/String 2", std::to_string(Kd));
 
-	float lPIDError = 0;
-	float lPIDIntegral = 0;
-	float lCurrentSpeed = 0; //lel
-	float rPIDError = 0;
-	float rPIDIntegral = 0;
-	float rCurrentSpeed = 0; //lel
+	float xPIDError = 0;
+	float xPIDIntegral = 0;
+	float xCurrentSpeed = 0; //top
+	float yPIDError = 0;
+	float yPIDIntegral = 0;
+	float yCurrentSpeed = 0; //lel
+	float zPIDError = 0;
+	float zPIDIntegral = 0;
+	float zCurrentSpeed = 0; //lel
 
 	bool precisionMode = false;
 	float precisionFactor = 0.75f;
 
-	float joyDifference = joystick->GetRawAxis(JOY_AXIS_LY) - joystick->GetRawAxis(JOY_AXIS_RY);
-	float alignmentAngle = 0;
-	float alignmentOffset = 0;
-	float correctionFactor = 120.f;
-
 	double oldtime = GetTime();
 	while (true) {
-		//drive with tank drive for now
 		double ctime = GetTime();
 		if (driveRun) {
 			Kp = std::stof(SmartDashboard::GetString("DB/String 0"));
@@ -64,57 +57,43 @@ void* driveFunc(void* arg) {
 			//saving K values in dashboard q:^ )
 
 			precisionMode = joystick->GetRawButton(JOY_BTN_RBM);
-			/*if (precisionMode) {
-				//teehee
-				Kp /= 2;
-				Ki /= 2;
-				Kd /= 2;
-			}*/
 
 			//Left PID loop
-			float lCurrentError = joystick->GetRawAxis(JOY_AXIS_LY) - lCurrentSpeed;
-			lPIDIntegral += lPIDError * (ctime - oldtime);
-			float lPIDderivative = (lCurrentError - lPIDError) / (ctime - oldtime);
-			lCurrentSpeed += (Kp * lCurrentError) + (Ki * lPIDIntegral) + (Kd * lPIDderivative);
-			lPIDError = lCurrentError;
+			float xCurrentError = joystick->GetRawAxis(JOY_AXIS_LX) - xCurrentSpeed;
+			xPIDIntegral += xPIDError * (ctime - oldtime);
+			float xPIDderivative = (xCurrentError - xPIDError) / (ctime - oldtime);
+			xCurrentSpeed += (Kp * xCurrentError) + (Ki * xPIDIntegral) + (Kd * xPIDderivative);
+			xPIDError = xCurrentError;
 
 			//Right PID loop
-			float rCurrentError = joystick->GetRawAxis(JOY_AXIS_RY) - rCurrentSpeed;
-			rPIDIntegral += rPIDError * (ctime - oldtime);
-			float rPIDderivative = (rCurrentError - rPIDError) / (ctime - oldtime);
-			rCurrentSpeed += (Kp * rCurrentError) + (Ki * rPIDIntegral) + (Kd * rPIDderivative);
-			rPIDError = rCurrentError;
+			float yCurrentError = joystick->GetRawAxis(JOY_AXIS_LY) - yCurrentSpeed;
+			yPIDIntegral += yPIDError * (ctime - oldtime);
+			float yPIDderivative = (yCurrentError - yPIDError) / (ctime - oldtime);
+			yCurrentSpeed += (Kp * yCurrentError) + (Ki * yPIDIntegral) + (Kd * yPIDderivative);
+			yPIDError = yCurrentError;
 
-			SmartDashboard::PutString("DB/String 5", std::to_string(lCurrentSpeed));
-			SmartDashboard::PutString("DB/String 6", std::to_string(rCurrentSpeed));
-			lCurrentSpeed = safe_motor(lCurrentSpeed);
-			rCurrentSpeed = safe_motor(rCurrentSpeed);
-			SmartDashboard::PutString("DB/String 7", std::to_string(lCurrentSpeed));
-			SmartDashboard::PutString("DB/String 8", std::to_string(rCurrentSpeed));
+			//Rotate PID loop
+			float zCurrentError = joystick->GetRawAxis(JOY_AXIS_RX) - zCurrentSpeed;
+			zPIDIntegral += zPIDError * (ctime - oldtime);
+			float zPIDderivative = (zCurrentError - zPIDError) / (ctime - oldtime);
+			zCurrentSpeed += (Kp * zCurrentError) + (Ki * zPIDIntegral) + (Kd * zPIDderivative);
+			zPIDError = zCurrentError;
 
-			joyDifference = joystick->GetRawAxis(JOY_AXIS_LY) - joystick->GetRawAxis(JOY_AXIS_RY);
-			if (fabs(joyDifference) > 0.09) {
-				SmartDashboard::PutString("DB/String 3", "Waiting for alignment...");
-				SmartDashboard::PutString("DB/String 4", "Waiting for alignment...");
-				alignmentAngle = gyro->GetAngle();
-				if (precisionMode) {
-					drive->TankDrive(lCurrentSpeed * precisionFactor,
-									 rCurrentSpeed * precisionFactor);
-				} else {
-					drive->TankDrive(lCurrentSpeed,
-									 rCurrentSpeed);
-				}
+			xCurrentSpeed = safe_motor(xCurrentSpeed);
+			yCurrentSpeed = safe_motor(yCurrentSpeed);
+			zCurrentSpeed = safe_motor(zCurrentSpeed);
+			SmartDashboard::PutString("DB/String 5", std::to_string(xCurrentSpeed));
+			SmartDashboard::PutString("DB/String 6", std::to_string(yCurrentSpeed));
+			SmartDashboard::PutString("DB/String 7", std::to_string(zCurrentSpeed));
+
+			if (precisionMode) {
+				drive->MecanumDrive_Cartesian(xCurrentSpeed * precisionFactor,
+								 	yCurrentSpeed * precisionFactor,
+									zCurrentSpeed * precisionFactor);
 			} else {
-				alignmentOffset = alignmentAngle - gyro->GetAngle();
-				SmartDashboard::PutString("DB/String 3", std::to_string(alignmentAngle));
-				SmartDashboard::PutString("DB/String 4", std::to_string(gyro->GetAngle()));
-				if (precisionMode) {
-					drive->Drive((lCurrentSpeed + rCurrentSpeed) / 2.f * precisionFactor,
-								  correctionFactor * alignmentOffset);
-				} else {
-					drive->Drive((lCurrentSpeed + rCurrentSpeed) / 2.f,
-								  correctionFactor * alignmentOffset);
-				}
+				drive->MecanumDrive_Cartesian(xCurrentSpeed,
+								 	yCurrentSpeed,
+									zCurrentSpeed);
 			}
 		}
 		oldtime = ctime;

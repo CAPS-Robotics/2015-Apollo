@@ -29,8 +29,10 @@
 #define JOY_AXIS_DX             4
 #define JOY_AXIS_DY             5
 
-#define LEFT_MOTOR_PWM          0
-#define RIGHT_MOTOR_PWM         1
+#define FRONT_LEFT_MOTOR_PWM          0
+#define REAR_LEFT_MOTOR_PWM			  1
+#define FRONT_RIGHT_MOTOR_PWM         2
+#define REAR_RIGHT_MOTOR_PWM		  3
 
 #define GYRO_CHANNEL			0
 
