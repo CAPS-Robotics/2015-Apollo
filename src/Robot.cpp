@@ -2,27 +2,31 @@
 #include "Robot.h"
 #include "config.h"
 
-Seabiscuit::~Seabiscuit() {
-	delete drive;
-	delete joystick;
-}
+Seabiscuit::~Seabiscuit() {}
 
 void Seabiscuit::RobotInit() {
 	drive = new RobotDrive(FRONT_LEFT_MOTOR_PWM, REAR_LEFT_MOTOR_PWM,
 						   FRONT_RIGHT_MOTOR_PWM, REAR_RIGHT_MOTOR_PWM);
 	joystick = new Joystick(JOY_PORT_0);
+	liftTalon = new Talon(LIFT_PWM);
+	shifter = new DoubleSolenoid(SHIFT_UP, SHIFT_DOWN);
+	claw = new DoubleSolenoid(OPEN_CLAW, CLOSE_CLAW);
+	compressor = new Compressor(PCM_NODE_ID);
 
 	drive->SetSafetyEnabled(false);
 
 	pthread_create(&driveThread, NULL, driveFunc, NULL);
+	pthread_create(&inputThread, NULL, inputFunc, NULL);
 }
 
 void Seabiscuit::TeleopInit() {
 	driveRun = true;
+	compressor->Start();
 }
 
 void Seabiscuit::DisabledInit() {
 	driveRun = false;
+	compressor->Stop();
 }
 
 void* driveFunc(void* arg) {
@@ -60,14 +64,14 @@ void* driveFunc(void* arg) {
 
 			precisionMode = joystick->GetRawButton(JOY_BTN_RBM);
 
-			//Left PID loop
+			//X PID loop
 			float xCurrentError = joystick->GetRawAxis(JOY_AXIS_LX) - xCurrentSpeed;
 			xPIDIntegral += xPIDError * (ctime - oldtime);
 			float xPIDderivative = (xCurrentError - xPIDError) / (ctime - oldtime);
 			xCurrentSpeed += (Kp * xCurrentError) + (Ki * xPIDIntegral) + (Kd * xPIDderivative);
 			xPIDError = xCurrentError;
 
-			//Right PID loop
+			//Y PID loop
 			float yCurrentError = joystick->GetRawAxis(JOY_AXIS_LY) - yCurrentSpeed;
 			yPIDIntegral += yPIDError * (ctime - oldtime);
 			float yPIDderivative = (yCurrentError - yPIDError) / (ctime - oldtime);
@@ -90,15 +94,37 @@ void* driveFunc(void* arg) {
 
 			if (precisionMode) {
 				drive->MecanumDrive_Cartesian(xCurrentSpeed * precisionFactor,
-								 	yCurrentSpeed * precisionFactor,
-									zCurrentSpeed * precisionFactor);
+								 			  yCurrentSpeed * precisionFactor,
+											  zCurrentSpeed * precisionFactor);
 			} else {
 				drive->MecanumDrive_Cartesian(xCurrentSpeed,
-								 	yCurrentSpeed,
-									zCurrentSpeed);
+								 			  yCurrentSpeed,
+											  zCurrentSpeed);
 			}
 		}
 		oldtime = ctime;
+	}
+}
+
+void* inputFunc(void* arg) {
+	if(joystick->GetRawButton(JOY_BTN_RTG)) {
+		liftTalon->Set(0.75f);
+	} else if(joystick->GetRawButton(JOY_BTN_LTG)) {
+		liftTalon->Set(-0.75f);
+	} else {
+		liftTalon->Set(0.f);
+	}
+
+	if(joystick->GetRawButton(JOY_BTN_A)) {
+		shifter->Set(DoubleSolenoid::kForward);
+	} else if(joystick->GetRawButton(JOY_BTN_B)) {
+		shifter->Set(DoubleSolenoid::kReverse);
+	}
+
+	if(joystick->GetRawButton(JOY_BTN_X)) {
+		claw->Set(DoubleSolenoid::kForward);
+	} else if(joystick->GetRawButton(JOY_BTN_Y)) {
+		claw->Set(DoubleSolenoid::kReverse);
 	}
 }
 

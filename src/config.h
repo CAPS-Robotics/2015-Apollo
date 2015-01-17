@@ -29,11 +29,23 @@
 #define JOY_AXIS_DX             4
 #define JOY_AXIS_DY             5
 
-#define FRONT_LEFT_MOTOR_PWM          0
-#define REAR_LEFT_MOTOR_PWM			  1
-#define FRONT_RIGHT_MOTOR_PWM         2
-#define REAR_RIGHT_MOTOR_PWM		  3
+#define FRONT_LEFT_MOTOR_PWM    0
+#define REAR_LEFT_MOTOR_PWM		1
+#define FRONT_RIGHT_MOTOR_PWM   2
+#define REAR_RIGHT_MOTOR_PWM	3
+#define LIFT_PWM				4
+#define LEFT_CLAW_PWM			5
+#define RIGHT_CLAW_PWM			6
 
-#define GYRO_CHANNEL			0
+#define LIMIT_SWITCH			6
+
+#define PCM_NODE_ID				0
+
+//Solenoid stuff
+
+#define SHIFT_UP				0
+#define SHIFT_DOWN				1
+#define OPEN_CLAW				2
+#define CLOSE_CLAW				3
 
 #endif
