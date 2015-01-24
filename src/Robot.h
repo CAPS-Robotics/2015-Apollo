@@ -23,7 +23,7 @@ class Seabiscuit : public IterativeRobot
 {
 public:
     Seabiscuit() {};
-    ~Seabiscuit();
+    ~Seabiscuit() {};
 
     void RobotInit();
     void TeleopInit();

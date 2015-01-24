@@ -2,8 +2,6 @@
 #include "Robot.h"
 #include "config.h"
 
-Seabiscuit::~Seabiscuit() {}
-
 void Seabiscuit::RobotInit() {
 	drive = new RobotDrive(FRONT_LEFT_MOTOR_PWM, REAR_LEFT_MOTOR_PWM,
 						   FRONT_RIGHT_MOTOR_PWM, REAR_RIGHT_MOTOR_PWM);
@@ -30,8 +28,8 @@ void* driveFunc(void* arg) {
 			precisionMode = joystick->GetRawButton(JOY_BTN_RBM);
 
 			float xSpeed = joystick->GetRawAxis(JOY_AXIS_LX);
-			float ySpeed = joystick->GetRawAxis(JOY_AXIS_LY);
-			float zSpeed = joystick->GetRawAxis(JOY_AXIS_RX);
+			float zSpeed = -joystick->GetRawAxis(JOY_AXIS_LY);
+			float ySpeed = -joystick->GetRawAxis(JOY_AXIS_RX);
 
 			if (precisionMode) {
 				xSpeed *= precisionFactor;
