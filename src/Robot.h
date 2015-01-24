@@ -13,6 +13,8 @@ DoubleSolenoid	*shifter;
 DoubleSolenoid	*claw;
 Compressor		*compressor;
 Gyro            *gyro;
+DigitalInput	*topLimitSwitch;
+DigitalInput	*botLimitSwitch;
 
 bool             driveRun;
 pthread_t        driveThread;

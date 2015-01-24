@@ -37,7 +37,14 @@
 #define LEFT_CLAW_PWM			5
 #define RIGHT_CLAW_PWM			6
 
-#define LIMIT_SWITCH			6
+//Digital IO
+
+#define TOP_LIMIT_SWITCH		0
+#define BOT_LIMIT_SWITCH		1
+
+//Analog in
+
+#define GYRO_PWM				0
 
 #define PCM_NODE_ID				0
 

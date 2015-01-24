@@ -12,6 +12,10 @@ void Seabiscuit::RobotInit() {
 	shifter = new DoubleSolenoid(SHIFT_UP, SHIFT_DOWN);
 	claw = new DoubleSolenoid(OPEN_CLAW, CLOSE_CLAW);
 	compressor = new Compressor(PCM_NODE_ID);
+	gyro = new Gyro(GYRO_PWM);
+	gyro->Reset();
+	topLimitSwitch = new DigitalInput(TOP_LIMIT_SWITCH);
+	botLimitSwitch = new DigitalInput(BOT_LIMIT_SWITCH);
 
 	drive->SetSafetyEnabled(false);
 
@@ -22,6 +26,7 @@ void Seabiscuit::RobotInit() {
 void Seabiscuit::TeleopInit() {
 	driveRun = true;
 	compressor->Start();
+	gyro->Reset();
 }
 
 void Seabiscuit::DisabledInit() {
@@ -32,7 +37,7 @@ void Seabiscuit::DisabledInit() {
 void* driveFunc(void* arg) {
 	float Kp = 0.024000; //A
 	float Ki = 0.021000; //O
-	float Kd = 0.000420; //L
+	float Kd = 0;        //L
 
 	//mail
 
@@ -50,13 +55,17 @@ void* driveFunc(void* arg) {
 	float zPIDIntegral = 0;
 	float zCurrentSpeed = 0;
 
+	float gyroAngle = gyro->GetAngle();
+
 	bool precisionMode = false;
-	float precisionFactor = 0.75f;
+	float precisionFactor = 0.5f;
 
 	double oldtime = GetTime();
 	while (true) {
 		double ctime = GetTime();
 		if (driveRun) {
+			SmartDashboard::PutString("DB/String 3", std::to_string(gyro->GetAngle()));
+
 			Kp = std::stof(SmartDashboard::GetString("DB/String 0"));
 			Ki = std::stof(SmartDashboard::GetString("DB/String 1"));
 			Kd = std::stof(SmartDashboard::GetString("DB/String 2"));
@@ -80,6 +89,10 @@ void* driveFunc(void* arg) {
 
 			//Rotate PID loop
 			float zCurrentError = joystick->GetRawAxis(JOY_AXIS_RX) - zCurrentSpeed;
+			if(fabs(joystick->GetRawAxis(JOY_AXIS_LX)) < 0.08 && fabs(joystick->GetRawAxis(JOY_AXIS_RX)) < 0.01)
+				zCurrentSpeed += (gyroAngle - gyro->GetAngle()) / 1800.f;
+			else
+				gyroAngle = gyro->GetAngle();
 			zPIDIntegral += zPIDError * (ctime - oldtime);
 			float zPIDderivative = (zCurrentError - zPIDError) / (ctime - oldtime);
 			zCurrentSpeed += (Kp * zCurrentError) + (Ki * zPIDIntegral) + (Kd * zPIDderivative);
@@ -107,24 +120,26 @@ void* driveFunc(void* arg) {
 }
 
 void* inputFunc(void* arg) {
-	if(joystick->GetRawButton(JOY_BTN_RTG)) {
-		liftTalon->Set(0.75f);
-	} else if(joystick->GetRawButton(JOY_BTN_LTG)) {
-		liftTalon->Set(-0.75f);
-	} else {
-		liftTalon->Set(0.f);
-	}
+	while(true) {
+		if(joystick->GetRawButton(JOY_BTN_RTG) && !topLimitSwitch->Get()) {
+			liftTalon->Set(0.75f);
+		} else if(joystick->GetRawButton(JOY_BTN_LTG) && !botLimitSwitch->Get()) {
+			liftTalon->Set(-0.75f);
+		} else {
+			liftTalon->Set(0.f);
+		}
 
-	if(joystick->GetRawButton(JOY_BTN_A)) {
-		shifter->Set(DoubleSolenoid::kForward);
-	} else if(joystick->GetRawButton(JOY_BTN_B)) {
-		shifter->Set(DoubleSolenoid::kReverse);
-	}
+		if(joystick->GetRawButton(JOY_BTN_A)) {
+			shifter->Set(DoubleSolenoid::kForward);
+		} else if(joystick->GetRawButton(JOY_BTN_B)) {
+			shifter->Set(DoubleSolenoid::kReverse);
+		}
 
-	if(joystick->GetRawButton(JOY_BTN_X)) {
-		claw->Set(DoubleSolenoid::kForward);
-	} else if(joystick->GetRawButton(JOY_BTN_Y)) {
-		claw->Set(DoubleSolenoid::kReverse);
+		if(joystick->GetRawButton(JOY_BTN_X)) {
+			claw->Set(DoubleSolenoid::kForward);
+		} else if(joystick->GetRawButton(JOY_BTN_Y)) {
+			claw->Set(DoubleSolenoid::kReverse);
+		}
 	}
 }
 
