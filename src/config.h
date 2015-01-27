@@ -41,6 +41,8 @@
 
 #define TOP_LIMIT_SWITCH		0
 #define BOT_LIMIT_SWITCH		1
+#define TOP_CARRIAGE_SWITCH		2
+#define BOT_CARRIAGE_SWITCH		3
 
 //Analog in
 

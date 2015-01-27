@@ -16,17 +16,21 @@ void Seabiscuit::RobotInit() {
 	gyro->Reset();
 	topLimitSwitch = new DigitalInput(TOP_LIMIT_SWITCH);
 	botLimitSwitch = new DigitalInput(BOT_LIMIT_SWITCH);
+	topCarriageSwitch = new DigitalInput(TOP_CARRIAGE_SWITCH);
+	botCarriageSwitch = new DigitalInput(BOT_CARRIAGE_SWITCH);
 
 	drive->SetSafetyEnabled(false);
 
 	pthread_create(&driveThread, NULL, driveFunc, NULL);
 	pthread_create(&inputThread, NULL, inputFunc, NULL);
+	pthread_create(&switchThread, NULL, switchFunc, NULL);
 }
 
 void Seabiscuit::TeleopInit() {
 	driveRun = true;
 	compressor->Start();
 	gyro->Reset();
+	gyroAngle = gyro->GetAngle();
 }
 
 void Seabiscuit::DisabledInit() {
@@ -54,8 +58,6 @@ void* driveFunc(void* arg) {
 	float zPIDError = 0;
 	float zPIDIntegral = 0;
 	float zCurrentSpeed = 0;
-
-	float gyroAngle = gyro->GetAngle();
 
 	bool precisionMode = false;
 	float precisionFactor = 0.5f;
@@ -121,12 +123,19 @@ void* driveFunc(void* arg) {
 
 void* inputFunc(void* arg) {
 	while(true) {
+		if(topLimitSwitch->Get() || botLimitSwitch->Get()) {
+			statusSemaphore = stay;
+		}
+
 		if(joystick->GetRawButton(JOY_BTN_RTG) && !topLimitSwitch->Get()) {
 			liftTalon->Set(0.75f);
+			motorStatus = up;
 		} else if(joystick->GetRawButton(JOY_BTN_LTG) && !botLimitSwitch->Get()) {
 			liftTalon->Set(-0.75f);
+			motorStatus = down;
 		} else {
 			liftTalon->Set(0.f);
+			motorStatus = stay;
 		}
 
 		if(joystick->GetRawButton(JOY_BTN_A)) {
@@ -136,11 +145,30 @@ void* inputFunc(void* arg) {
 		}
 
 		if(joystick->GetRawButton(JOY_BTN_X)) {
-			claw->Set(DoubleSolenoid::kForward);
+			statusSemaphore = up;
 		} else if(joystick->GetRawButton(JOY_BTN_Y)) {
-			claw->Set(DoubleSolenoid::kReverse);
+			statusSemaphore = down;
 		}
 	}
+}
+
+void* switchFunc(void* data) {
+    while(1) {
+        switch(statusSemaphore) {
+        case stay:
+        	break;
+        case up:
+            if(height < maxheight)
+                ++height; //This kills the Wes
+            statusSemaphore = stay;
+            break;
+        case down:
+            if(height > 0)
+                --height; //This kills the Wes
+            statusSemaphore = stay;
+            break;
+        }
+    }
 }
 
 START_ROBOT_CLASS(Seabiscuit);
