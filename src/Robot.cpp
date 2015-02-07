@@ -1,3 +1,5 @@
+#include <unistd.h>
+
 #include "WPILib.h"
 #include "Robot.h"
 #include "config.h"
@@ -16,14 +18,17 @@ void Seabiscuit::RobotInit() {
 	gyro->Reset();
 	topLimitSwitch = new DigitalInput(TOP_LIMIT_SWITCH);
 	botLimitSwitch = new DigitalInput(BOT_LIMIT_SWITCH);
-	topCarriageSwitch = new DigitalInput(TOP_CARRIAGE_SWITCH);
-	botCarriageSwitch = new DigitalInput(BOT_CARRIAGE_SWITCH);
+	carriageSwitch = new DigitalInput(CARRIAGE_SWITCH);
 
 	drive->SetSafetyEnabled(false);
 
+	CameraServer::GetInstance()->SetQuality(50);
+	//the camera name (ex "cam0") can be found through the roborio web interface
+	CameraServer::GetInstance()->StartAutomaticCapture("cam0");
+
 	pthread_create(&driveThread, NULL, driveFunc, NULL);
 	pthread_create(&inputThread, NULL, inputFunc, NULL);
-	pthread_create(&switchThread, NULL, switchFunc, NULL);
+	pthread_create(&macroThread, NULL, macroFunc, NULL);
 }
 
 void Seabiscuit::TeleopInit() {
@@ -59,7 +64,7 @@ void* driveFunc(void* arg) {
 	float zPIDIntegral = 0;
 	float zCurrentSpeed = 0;
 
-	bool precisionMode = false;
+	bool precisionMode = true;
 	float precisionFactor = 0.5f;
 
 	double oldtime = GetTime();
@@ -67,13 +72,14 @@ void* driveFunc(void* arg) {
 		double ctime = GetTime();
 		if (driveRun) {
 			SmartDashboard::PutString("DB/String 3", std::to_string(gyro->GetAngle()));
+			SmartDashboard::PutString("DB/String 4", std::to_string(gyroAngle - gyro->GetAngle()));
 
 			Kp = std::stof(SmartDashboard::GetString("DB/String 0"));
 			Ki = std::stof(SmartDashboard::GetString("DB/String 1"));
 			Kd = std::stof(SmartDashboard::GetString("DB/String 2"));
 			//saving K values in dashboard q:^ )
 
-			precisionMode = joystick->GetRawButton(JOY_BTN_RBM);
+			precisionMode = !joystick->GetRawButton(JOY_BTN_RBM);
 
 			//X PID loop
 			float xCurrentError = joystick->GetRawAxis(JOY_AXIS_LX) - xCurrentSpeed;
@@ -91,10 +97,14 @@ void* driveFunc(void* arg) {
 
 			//Rotate PID loop
 			float zCurrentError = joystick->GetRawAxis(JOY_AXIS_RX) - zCurrentSpeed;
-			if(fabs(joystick->GetRawAxis(JOY_AXIS_LX)) < 0.08 && fabs(joystick->GetRawAxis(JOY_AXIS_RX)) < 0.01)
-				zCurrentSpeed += (gyroAngle - gyro->GetAngle()) / 1800.f;
-			else
+			if(fabs(joystick->GetRawAxis(JOY_AXIS_LX)) < 0.08 && fabs(joystick->GetRawAxis(JOY_AXIS_RX)) < 0.01) {
+				if(fabs(joystick->GetRawAxis(JOY_AXIS_LY) > 0.5))
+					zCurrentSpeed += (gyroAngle - gyro->GetAngle()) / 1800.f;
+				else
+					gyroAngle = gyro->GetAngle();
+			} else {
 				gyroAngle = gyro->GetAngle();
+			}
 			zPIDIntegral += zPIDError * (ctime - oldtime);
 			float zPIDderivative = (zCurrentError - zPIDError) / (ctime - oldtime);
 			zCurrentSpeed += (Kp * zCurrentError) + (Ki * zPIDIntegral) + (Kd * zPIDderivative);
@@ -108,13 +118,13 @@ void* driveFunc(void* arg) {
 			SmartDashboard::PutString("DB/String 7", std::to_string(zCurrentSpeed));
 
 			if (precisionMode) {
-				drive->MecanumDrive_Cartesian(xCurrentSpeed * precisionFactor,
-								 			  yCurrentSpeed * precisionFactor,
-											  zCurrentSpeed * precisionFactor);
+				drive->MecanumDrive_Cartesian(std::min(1.0, 1.2 * xCurrentSpeed * precisionFactor),
+											  0.9 * yCurrentSpeed * precisionFactor,
+											  0.9 * zCurrentSpeed * precisionFactor);
 			} else {
-				drive->MecanumDrive_Cartesian(xCurrentSpeed,
-								 			  yCurrentSpeed,
-											  zCurrentSpeed);
+				drive->MecanumDrive_Cartesian(std::min(1.0, 1.2 * xCurrentSpeed),
+											  0.9 * yCurrentSpeed,
+											  0.9 * zCurrentSpeed);
 			}
 		}
 		oldtime = ctime;
@@ -123,10 +133,6 @@ void* driveFunc(void* arg) {
 
 void* inputFunc(void* arg) {
 	while(true) {
-		if(topLimitSwitch->Get() || botLimitSwitch->Get()) {
-			statusSemaphore = stay;
-		}
-
 		if(joystick->GetRawButton(JOY_BTN_RTG) && !topLimitSwitch->Get()) {
 			liftTalon->Set(0.75f);
 			motorStatus = up;
@@ -138,37 +144,29 @@ void* inputFunc(void* arg) {
 			motorStatus = stay;
 		}
 
-		if(joystick->GetRawButton(JOY_BTN_A)) {
+		if(joystick->GetRawButton(JOY_BTN_B)) {
 			shifter->Set(DoubleSolenoid::kForward);
-		} else if(joystick->GetRawButton(JOY_BTN_B)) {
+		} else if(joystick->GetRawButton(JOY_BTN_A)) {
 			shifter->Set(DoubleSolenoid::kReverse);
 		}
 
-		if(joystick->GetRawButton(JOY_BTN_X)) {
-			statusSemaphore = up;
-		} else if(joystick->GetRawButton(JOY_BTN_Y)) {
-			statusSemaphore = down;
+		if(joystick->GetRawButton(JOY_BTN_Y)) {
+			claw->Set(DoubleSolenoid::kForward);
+		} else if(joystick->GetRawButton(JOY_BTN_X)) {
+			claw->Set(DoubleSolenoid::kReverse);
 		}
 	}
 }
 
-void* switchFunc(void* data) {
-    while(1) {
-        switch(statusSemaphore) {
-        case stay:
-        	break;
-        case up:
-            if(height < maxheight)
-                ++height; //This kills the Wes
-            statusSemaphore = stay;
-            break;
-        case down:
-            if(height > 0)
-                --height; //This kills the Wes
-            statusSemaphore = stay;
-            break;
-        }
-    }
+void* macroFunc(void* arg) {
+	while(true) {
+		if(carriageSwitch->Get()) {
+			if(height % 2 == 1) height += motorStatus;
+		} else {
+			if(height % 2 == 0) height += motorStatus;
+		}
+		SmartDashboard::PutString("DB/String 8", "Height: " + std::to_string(height));
+	}
 }
 
 START_ROBOT_CLASS(Seabiscuit);

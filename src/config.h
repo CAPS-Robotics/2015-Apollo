@@ -30,9 +30,9 @@
 #define JOY_AXIS_DY             5
 
 #define FRONT_LEFT_MOTOR_PWM    0
-#define REAR_LEFT_MOTOR_PWM		1
-#define FRONT_RIGHT_MOTOR_PWM   2
-#define REAR_RIGHT_MOTOR_PWM	3
+#define FRONT_RIGHT_MOTOR_PWM   1
+#define REAR_RIGHT_MOTOR_PWM	2
+#define REAR_LEFT_MOTOR_PWM		3
 #define LIFT_PWM				4
 #define LEFT_CLAW_PWM			5
 #define RIGHT_CLAW_PWM			6
@@ -41,8 +41,7 @@
 
 #define TOP_LIMIT_SWITCH		0
 #define BOT_LIMIT_SWITCH		1
-#define TOP_CARRIAGE_SWITCH		2
-#define BOT_CARRIAGE_SWITCH		3
+#define CARRIAGE_SWITCH			2
 
 //Analog in
 
