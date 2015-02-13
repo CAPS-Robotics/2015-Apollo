@@ -4,9 +4,7 @@
 #include "Robot.h"
 #include "config.h"
 
-Seabiscuit::~Seabiscuit() {}
-
-void Seabiscuit::RobotInit() {
+void Apollo::RobotInit() {
 	drive = new RobotDrive(FRONT_LEFT_MOTOR_PWM, REAR_LEFT_MOTOR_PWM,
 						   FRONT_RIGHT_MOTOR_PWM, REAR_RIGHT_MOTOR_PWM);
 	joystick = new Joystick(JOY_PORT_0);
@@ -18,6 +16,8 @@ void Seabiscuit::RobotInit() {
 	gyro->Reset();
 	topLimitSwitch = new DigitalInput(TOP_LIMIT_SWITCH);
 	botLimitSwitch = new DigitalInput(BOT_LIMIT_SWITCH);
+	redLED = new DigitalOutput(RED_LED);
+	greenLED = new DigitalOutput(GREEN_LED);
 	carriageSwitch = new DigitalInput(CARRIAGE_SWITCH);
 
 	drive->SetSafetyEnabled(false);
@@ -31,14 +31,39 @@ void Seabiscuit::RobotInit() {
 	pthread_create(&macroThread, NULL, macroFunc, NULL);
 }
 
-void Seabiscuit::TeleopInit() {
+void Apollo::AutonomousInit() {
+	compressor->Start();
+	claw->Set(DoubleSolenoid::kReverse);
+	liftTalon->Set(0.75f);
+	Wait(.5f);
+	shifter->Set(DoubleSolenoid::kForward);
+
+	Wait(2.f);
+	liftTalon->Set(0.f);
+
+	//Begin strafing w/ gyro magic
+	gyro->Reset();
+	double starttime = GetClock();
+	while(GetClock() - starttime < 3.f) {
+		drive->MecanumDrive_Cartesian(0.5f, 0.f, -gyro->GetAngle() / 1800.f);
+	}
+	drive->MecanumDrive_Cartesian(0.f, -0.35f, 0.f);
+	Wait(3.75f);
+	drive->MecanumDrive_Cartesian(0.f, 0.35f, 0.f);
+	Wait(0.2f);
+	drive->MecanumDrive_Cartesian(0.f, 0.f, 0.f);
+	Wait(1.f);
+	claw->Set(DoubleSolenoid::kForward);
+}
+
+void Apollo::TeleopInit() {
 	driveRun = true;
 	compressor->Start();
 	gyro->Reset();
 	gyroAngle = gyro->GetAngle();
 }
 
-void Seabiscuit::DisabledInit() {
+void Apollo::DisabledInit() {
 	driveRun = false;
 	compressor->Stop();
 }
@@ -133,7 +158,8 @@ void* driveFunc(void* arg) {
 
 void* inputFunc(void* arg) {
 	while(true) {
-		if(joystick->GetRawButton(JOY_BTN_RTG) && !topLimitSwitch->Get()) {
+		if(!driveRun) continue;
+		if(joystick->GetRawButton(JOY_BTN_LBM) && !topLimitSwitch->Get()) {
 			liftTalon->Set(0.75f);
 			motorStatus = up;
 		} else if(joystick->GetRawButton(JOY_BTN_LTG) && !botLimitSwitch->Get()) {
@@ -155,6 +181,15 @@ void* inputFunc(void* arg) {
 		} else if(joystick->GetRawButton(JOY_BTN_X)) {
 			claw->Set(DoubleSolenoid::kReverse);
 		}
+
+		if(joystick->GetRawAxis(JOY_AXIS_DY) > 0.8) {
+			redLED->Set(0);
+			greenLED->Set(1);
+		}
+		if(joystick->GetRawAxis(JOY_AXIS_DY) < -0.8) {
+			redLED->Set(1);
+			greenLED->Set(0);
+		}
 	}
 }
 
@@ -169,4 +204,4 @@ void* macroFunc(void* arg) {
 	}
 }
 
-START_ROBOT_CLASS(Seabiscuit);
+START_ROBOT_CLASS(Apollo);

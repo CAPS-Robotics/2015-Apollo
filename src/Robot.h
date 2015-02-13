@@ -23,6 +23,8 @@ Compressor		*compressor;
 Gyro            *gyro;
 DigitalInput	*topLimitSwitch;
 DigitalInput	*botLimitSwitch;
+DigitalOutput	*redLED;
+DigitalOutput	*greenLED;
 DigitalInput	*carriageSwitch;
 
 bool             driveRun;
@@ -44,13 +46,14 @@ float safe_motor(float power) {
 	return fabs(power) > 1 ? sgn(power) : power;
 }
 
-class Seabiscuit : public IterativeRobot
+class Apollo : public IterativeRobot
 {
 public:
-    Seabiscuit() {};
-    ~Seabiscuit();
+    Apollo() {};
+    ~Apollo() {};
 
     void RobotInit();
+    void AutonomousInit();
     void TeleopInit();
     void DisabledInit();
 
@@ -58,7 +61,6 @@ public:
     void TestInit() {}
     void DisabledPeriodic() {}
     void AutonomousPeriodic() {}
-    void AutonomousInit() {}
     void TeleopPeriodic() {}
     void TestPeriodic() {}
 };
