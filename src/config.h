@@ -48,6 +48,7 @@
 //Analog in
 
 #define GYRO_PWM				0
+#define STRING_POT_PWM			1
 
 #define PCM_NODE_ID				0
 

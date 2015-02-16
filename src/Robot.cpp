@@ -14,6 +14,7 @@ void Apollo::RobotInit() {
 	compressor = new Compressor(PCM_NODE_ID);
 	gyro = new Gyro(GYRO_PWM);
 	gyro->Reset();
+	stringPot = new AnalogInput(STRING_POT_PWM);
 	topLimitSwitch = new DigitalInput(TOP_LIMIT_SWITCH);
 	botLimitSwitch = new DigitalInput(BOT_LIMIT_SWITCH);
 	redLED = new DigitalOutput(RED_LED);
@@ -33,10 +34,10 @@ void Apollo::RobotInit() {
 
 void Apollo::AutonomousInit() {
 	compressor->Start();
-	claw->Set(DoubleSolenoid::kReverse);
+	claw->Set(DoubleSolenoid::kForward);
 	liftTalon->Set(0.75f);
 	Wait(.5f);
-	shifter->Set(DoubleSolenoid::kForward);
+	shifter->Set(DoubleSolenoid::kReverse);
 
 	Wait(2.f);
 	liftTalon->Set(0.f);
@@ -53,7 +54,7 @@ void Apollo::AutonomousInit() {
 	Wait(0.2f);
 	drive->MecanumDrive_Cartesian(0.f, 0.f, 0.f);
 	Wait(1.f);
-	claw->Set(DoubleSolenoid::kForward);
+	claw->Set(DoubleSolenoid::kReverse);
 }
 
 void Apollo::TeleopInit() {
@@ -94,6 +95,8 @@ void* driveFunc(void* arg) {
 
 	double oldtime = GetTime();
 	while (true) {
+		SmartDashboard::PutString("DB/String 8", std::to_string(stringPot->GetValue()));
+
 		double ctime = GetTime();
 		if (driveRun) {
 			SmartDashboard::PutString("DB/String 3", std::to_string(gyro->GetAngle()));
@@ -176,9 +179,9 @@ void* inputFunc(void* arg) {
 			shifter->Set(DoubleSolenoid::kReverse);
 		}
 
-		if(joystick->GetRawButton(JOY_BTN_Y)) {
+		if(joystick->GetRawButton(JOY_BTN_X)) {
 			claw->Set(DoubleSolenoid::kForward);
-		} else if(joystick->GetRawButton(JOY_BTN_X)) {
+		} else if(joystick->GetRawButton(JOY_BTN_Y)) {
 			claw->Set(DoubleSolenoid::kReverse);
 		}
 
@@ -200,7 +203,7 @@ void* macroFunc(void* arg) {
 		} else {
 			if(height % 2 == 0) height += motorStatus;
 		}
-		SmartDashboard::PutString("DB/String 8", "Height: " + std::to_string(height));
+		//SmartDashboard::PutString("DB/String 8", "Height: " + std::to_string(height));
 	}
 }
 

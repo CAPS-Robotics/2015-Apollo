@@ -21,6 +21,7 @@ DoubleSolenoid	*shifter;
 DoubleSolenoid	*claw;
 Compressor		*compressor;
 Gyro            *gyro;
+AnalogInput		*stringPot;
 DigitalInput	*topLimitSwitch;
 DigitalInput	*botLimitSwitch;
 DigitalOutput	*redLED;
