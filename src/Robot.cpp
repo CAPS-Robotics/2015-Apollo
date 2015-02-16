@@ -95,7 +95,7 @@ void* driveFunc(void* arg) {
 
 	double oldtime = GetTime();
 	while (true) {
-		SmartDashboard::PutString("DB/String 8", std::to_string(stringPot->GetValue()));
+		SmartDashboard::PutString("DB/String 8", std::to_string(stringPot->GetVoltage()));
 
 		double ctime = GetTime();
 		if (driveRun) {
