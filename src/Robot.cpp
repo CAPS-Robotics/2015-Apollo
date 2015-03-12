@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <thread>
 
 #include "WPILib.h"
 #include "Robot.h"
@@ -17,9 +18,7 @@ void Apollo::RobotInit() {
 	stringPot = new AnalogInput(STRING_POT_PWM);
 	topLimitSwitch = new DigitalInput(TOP_LIMIT_SWITCH);
 	botLimitSwitch = new DigitalInput(BOT_LIMIT_SWITCH);
-	redLED = new DigitalOutput(RED_LED);
-	greenLED = new DigitalOutput(GREEN_LED);
-	carriageSwitch = new DigitalInput(CARRIAGE_SWITCH);
+	LED = new DigitalOutput(LED_PIN);
 
 	drive->SetSafetyEnabled(false);
 
@@ -29,32 +28,53 @@ void Apollo::RobotInit() {
 
 	pthread_create(&driveThread, NULL, driveFunc, NULL);
 	pthread_create(&inputThread, NULL, inputFunc, NULL);
-	pthread_create(&macroThread, NULL, macroFunc, NULL);
 }
 
+bool imsosorry = true;
 void Apollo::AutonomousInit() {
-	compressor->Start();
-	claw->Set(DoubleSolenoid::kForward);
-	liftTalon->Set(0.75f);
-	Wait(.5f);
-	shifter->Set(DoubleSolenoid::kReverse);
+	switch(std::stoi(SmartDashboard::GetString("DB/String 9"))) {
+	case 2: //The Luigi strat
+		compressor->Start();
+		break;
+	case 1: //The Gratuitously Simple strat
+		compressor->Start();
 
-	Wait(2.f);
-	liftTalon->Set(0.f);
+		//Drive forwards
+		drive->MecanumDrive_Cartesian(0.f, -0.35f, 0.f);
+		Wait(4.25f);
+		drive->MecanumDrive_Cartesian(0.f, 0.35f, 0.f);
+		Wait(0.2f);
+		drive->MecanumDrive_Cartesian(0.f, 0.f, 0.f);
+		break;
+	case 0: //The OG strat
+	default:
+		compressor->Start();
 
-	//Begin strafing w/ gyro magic
-	gyro->Reset();
-	double starttime = GetClock();
-	while(GetClock() - starttime < 3.f) {
-		drive->MecanumDrive_Cartesian(0.5f, 0.f, -gyro->GetAngle() / 1800.f);
+		//Lift bin
+		claw->Set(DoubleSolenoid::kForward);
+		liftTalon->Set(0.75f);
+		Wait(.5f);
+		shifter->Set(DoubleSolenoid::kReverse);
+		Wait(2.f);
+		liftTalon->Set(0.f);
+
+		std::thread strafeThread([]() -> void {
+			gyro->Reset();
+			while(imsosorry) {
+				drive->MecanumDrive_Cartesian(0.5f, 0.f, -gyro->GetAngle() / 1800.f);
+			}
+		});
+		Wait(3.f);
+		imsosorry = false;
+
+		//Drive forward
+		drive->MecanumDrive_Cartesian(0.f, -0.35f, 0.f);
+		Wait(3.75f);
+		drive->MecanumDrive_Cartesian(0.f, 0.35f, 0.f);
+		Wait(0.2f);
+		drive->MecanumDrive_Cartesian(0.f, 0.f, 0.f);
+		break;
 	}
-	drive->MecanumDrive_Cartesian(0.f, -0.35f, 0.f);
-	Wait(3.75f);
-	drive->MecanumDrive_Cartesian(0.f, 0.35f, 0.f);
-	Wait(0.2f);
-	drive->MecanumDrive_Cartesian(0.f, 0.f, 0.f);
-	Wait(1.f);
-	claw->Set(DoubleSolenoid::kReverse);
 }
 
 void Apollo::TeleopInit() {
@@ -186,24 +206,11 @@ void* inputFunc(void* arg) {
 		}
 
 		if(joystick->GetRawAxis(JOY_AXIS_DY) > 0.8) {
-			redLED->Set(0);
-			greenLED->Set(1);
+			LED->Set(0);
 		}
 		if(joystick->GetRawAxis(JOY_AXIS_DY) < -0.8) {
-			redLED->Set(1);
-			greenLED->Set(0);
+			LED->Set(1);
 		}
-	}
-}
-
-void* macroFunc(void* arg) {
-	while(true) {
-		if(carriageSwitch->Get()) {
-			if(height % 2 == 1) height += motorStatus;
-		} else {
-			if(height % 2 == 0) height += motorStatus;
-		}
-		//SmartDashboard::PutString("DB/String 8", "Height: " + std::to_string(height));
 	}
 }
 

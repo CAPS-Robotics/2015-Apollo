@@ -41,9 +41,7 @@
 
 #define TOP_LIMIT_SWITCH		0
 #define BOT_LIMIT_SWITCH		1
-#define	RED_LED					2
-#define GREEN_LED				3
-#define CARRIAGE_SWITCH			4
+#define	LED_PIN					2
 
 //Analog in
 

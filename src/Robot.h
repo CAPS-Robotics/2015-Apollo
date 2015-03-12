@@ -12,7 +12,6 @@ typedef enum
 
 void* driveFunc(void* arg);
 void* inputFunc(void* arg);
-void* macroFunc(void* arg);
 
 RobotDrive      *drive;
 Joystick        *joystick;
@@ -24,14 +23,11 @@ Gyro            *gyro;
 AnalogInput		*stringPot;
 DigitalInput	*topLimitSwitch;
 DigitalInput	*botLimitSwitch;
-DigitalOutput	*redLED;
-DigitalOutput	*greenLED;
-DigitalInput	*carriageSwitch;
+DigitalOutput	*LED;
 
 bool             driveRun;
 pthread_t        driveThread;
 pthread_t		 inputThread;
-pthread_t		 macroThread;
 
 float gyroAngle;
 
