@@ -26,11 +26,12 @@ void Apollo::RobotInit() {
 	//the camera name (ex "cam0") can be found through the roborio web interface
 	CameraServer::GetInstance()->StartAutomaticCapture("cam0");
 
-	pthread_create(&driveThread, NULL, driveFunc, NULL);
-	pthread_create(&inputThread, NULL, inputFunc, NULL);
+	driveThread = new std::thread(driveFunc);
+	driveThread->detach();
+	inputThread = new std::thread(inputFunc);
+	inputThread->detach();
 }
 
-bool imsosorry = true;
 void Apollo::AutonomousInit() {
 	switch(std::stoi(SmartDashboard::GetString("DB/String 9"))) {
 	case 2: //The Luigi strat
@@ -41,7 +42,7 @@ void Apollo::AutonomousInit() {
 
 		//Drive forwards
 		drive->MecanumDrive_Cartesian(0.f, -0.35f, 0.f);
-		Wait(4.25f);
+		Wait(3.9f);
 		drive->MecanumDrive_Cartesian(0.f, 0.35f, 0.f);
 		Wait(0.2f);
 		drive->MecanumDrive_Cartesian(0.f, 0.f, 0.f);
@@ -53,23 +54,28 @@ void Apollo::AutonomousInit() {
 		//Lift bin
 		claw->Set(DoubleSolenoid::kForward);
 		liftTalon->Set(0.75f);
-		Wait(.5f);
+		Wait(1.f);
 		shifter->Set(DoubleSolenoid::kReverse);
 		Wait(2.f);
 		liftTalon->Set(0.f);
 
-		std::thread strafeThread([]() -> void {
+		bool *quit = new bool(false);
+		std::thread *strafeThread = new std::thread([quit] () -> void {
 			gyro->Reset();
-			while(imsosorry) {
+			while(!(*quit)) {
 				drive->MecanumDrive_Cartesian(0.5f, 0.f, -gyro->GetAngle() / 1800.f);
 			}
 		});
-		Wait(3.f);
-		imsosorry = false;
+		strafeThread->detach();
+		Wait(1.f);
+		*quit = true;
+		Wait(0.1f);
+		delete quit;
+		delete strafeThread;
 
 		//Drive forward
 		drive->MecanumDrive_Cartesian(0.f, -0.35f, 0.f);
-		Wait(3.75f);
+		Wait(4.f);
 		drive->MecanumDrive_Cartesian(0.f, 0.35f, 0.f);
 		Wait(0.2f);
 		drive->MecanumDrive_Cartesian(0.f, 0.f, 0.f);
@@ -89,7 +95,7 @@ void Apollo::DisabledInit() {
 	compressor->Stop();
 }
 
-void* driveFunc(void* arg) {
+void driveFunc() {
 	float Kp = 0.024000; //A
 	float Ki = 0.021000; //O
 	float Kd = 0;        //L
@@ -179,7 +185,7 @@ void* driveFunc(void* arg) {
 	}
 }
 
-void* inputFunc(void* arg) {
+void inputFunc() {
 	while(true) {
 		if(!driveRun) continue;
 		if(joystick->GetRawButton(JOY_BTN_LBM) && !topLimitSwitch->Get()) {

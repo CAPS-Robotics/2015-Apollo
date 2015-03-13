@@ -1,8 +1,6 @@
 #ifndef __MY_ROBOT_H_
 #define __MY_ROBOT_H_
 
-#include <pthread.h>
-
 typedef enum
 {
     down = -1,
@@ -10,8 +8,8 @@ typedef enum
     up = 1
 } Status;
 
-void* driveFunc(void* arg);
-void* inputFunc(void* arg);
+void driveFunc();
+void inputFunc();
 
 RobotDrive      *drive;
 Joystick        *joystick;
@@ -26,8 +24,8 @@ DigitalInput	*botLimitSwitch;
 DigitalOutput	*LED;
 
 bool             driveRun;
-pthread_t        driveThread;
-pthread_t		 inputThread;
+std::thread      *driveThread;
+std::thread		 *inputThread;
 
 float gyroAngle;
 
