@@ -33,22 +33,12 @@ void Apollo::RobotInit() {
 }
 
 void Apollo::AutonomousInit() {
-	switch(std::stoi(SmartDashboard::GetString("DB/String 9"))) {
-	case 2: //The Luigi strat
-		compressor->Start();
-		break;
-	case 1: //The Gratuitously Simple strat
-		compressor->Start();
+	bool *quit;
+	std::thread *strafeThread;
 
-		//Drive forwards
-		drive->MecanumDrive_Cartesian(0.f, -0.35f, 0.f);
-		Wait(3.9f);
-		drive->MecanumDrive_Cartesian(0.f, 0.35f, 0.f);
-		Wait(0.2f);
-		drive->MecanumDrive_Cartesian(0.f, 0.f, 0.f);
-		break;
-	case 0: //The OG strat
+	switch(std::stoi(SmartDashboard::GetString("DB/String 9"))) {
 	default:
+	case 0: //The OG strat
 		compressor->Start();
 
 		//Lift bin
@@ -59,8 +49,8 @@ void Apollo::AutonomousInit() {
 		Wait(2.f);
 		liftTalon->Set(0.f);
 
-		bool *quit = new bool(false);
-		std::thread *strafeThread = new std::thread([quit] () -> void {
+		quit = new bool(false);
+		strafeThread = new std::thread([quit] () -> void {
 			gyro->Reset();
 			while(!(*quit)) {
 				drive->MecanumDrive_Cartesian(0.5f, 0.f, -gyro->GetAngle() / 1800.f);
@@ -76,6 +66,90 @@ void Apollo::AutonomousInit() {
 		//Drive forward
 		drive->MecanumDrive_Cartesian(0.f, -0.35f, 0.f);
 		Wait(4.f);
+		drive->MecanumDrive_Cartesian(0.f, 0.35f, 0.f);
+		Wait(0.2f);
+		drive->MecanumDrive_Cartesian(0.f, 0.f, 0.f);
+		break;
+	case 1: //The Gratuitously Simple strat
+		compressor->Start();
+
+		//Drive forwards
+		drive->MecanumDrive_Cartesian(0.f, -0.35f, 0.f);
+		Wait(3.9f);
+		drive->MecanumDrive_Cartesian(0.f, 0.35f, 0.f);
+		Wait(0.2f);
+		drive->MecanumDrive_Cartesian(0.f, 0.f, 0.f);
+		break;
+	case 2: //The Luigi strat
+		compressor->Start();
+		break;
+	case 3: //The Driven strat
+		compressor->Start();
+
+		quit = new bool(false);
+		strafeThread = new std::thread([quit] () -> void {
+			gyro->Reset();
+			while(!(*quit)) {
+				drive->MecanumDrive_Cartesian(0.5f, 0.f, -gyro->GetAngle() / 1800.f);
+			}
+		});
+		strafeThread->detach();
+		Wait(2.f);
+		*quit = true;
+		Wait(0.1f);
+		delete quit;
+		delete strafeThread;
+		drive->MecanumDrive_Cartesian(0.f, 0.f, 0.f);
+		break;
+	case 4: //The playoffs strat
+		compressor->Start();
+
+		//Lift bin
+		claw->Set(DoubleSolenoid::kForward);
+		liftTalon->Set(0.75f);
+		Wait(1.f);
+		shifter->Set(DoubleSolenoid::kReverse);
+		Wait(0.5f);
+		liftTalon->Set(0.f);
+		break;
+	case 10: //The OG strat (sans bump)
+		compressor->Start();
+
+		//Lift bin
+		claw->Set(DoubleSolenoid::kForward);
+		liftTalon->Set(0.75f);
+		Wait(1.f);
+		shifter->Set(DoubleSolenoid::kReverse);
+		Wait(2.f);
+		liftTalon->Set(0.f);
+
+		quit = new bool(false);
+		strafeThread = new std::thread([quit] () -> void {
+			gyro->Reset();
+			while(!(*quit)) {
+				drive->MecanumDrive_Cartesian(0.5f, 0.f, -gyro->GetAngle() / 1800.f);
+			}
+		});
+		strafeThread->detach();
+		Wait(1.f);
+		*quit = true;
+		Wait(0.1f);
+		delete quit;
+		delete strafeThread;
+
+		//Drive forward
+		drive->MecanumDrive_Cartesian(0.f, -0.35f, 0.f);
+		Wait(3.65f);
+		drive->MecanumDrive_Cartesian(0.f, 0.35f, 0.f);
+		Wait(0.2f);
+		drive->MecanumDrive_Cartesian(0.f, 0.f, 0.f);
+		break;
+	case 11: //The Gratuitously Simple strat (sans bump)
+		compressor->Start();
+
+		//Drive forwards
+		drive->MecanumDrive_Cartesian(0.f, -0.35f, 0.f);
+		Wait(3.55f);
 		drive->MecanumDrive_Cartesian(0.f, 0.35f, 0.f);
 		Wait(0.2f);
 		drive->MecanumDrive_Cartesian(0.f, 0.f, 0.f);
