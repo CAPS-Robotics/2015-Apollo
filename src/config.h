@@ -56,5 +56,7 @@
 #define SHIFT_DOWN				1
 #define OPEN_CLAW				2
 #define CLOSE_CLAW				3
+#define OPEN_CRUNCHER			4
+#define CLOSE_CRUNCHER			5
 
 #endif

@@ -273,10 +273,15 @@ void inputFunc() {
 			motorStatus = stay;
 		}
 
+		if(joystick->GetRawButton(JOY_BTN_RTG)) {
+			shifterState = !shifterState;
+			shifter->Set(shifterState ? DoubleSolenoid::kForward : DoubleSolenoid::kReverse);
+		}
+
 		if(joystick->GetRawButton(JOY_BTN_B)) {
-			shifter->Set(DoubleSolenoid::kForward);
+			cruncher->Set(DoubleSolenoid::kForward);
 		} else if(joystick->GetRawButton(JOY_BTN_A)) {
-			shifter->Set(DoubleSolenoid::kReverse);
+			cruncher->Set(DoubleSolenoid::kReverse);
 		}
 
 		if(joystick->GetRawButton(JOY_BTN_X)) {

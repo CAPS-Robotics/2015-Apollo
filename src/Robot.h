@@ -16,6 +16,7 @@ Joystick        *joystick;
 Talon			*liftTalon;
 DoubleSolenoid	*shifter;
 DoubleSolenoid	*claw;
+DoubleSolenoid	*cruncher;
 Compressor		*compressor;
 Gyro            *gyro;
 AnalogInput		*stringPot;
@@ -28,6 +29,7 @@ std::thread      *driveThread;
 std::thread		 *inputThread;
 
 float gyroAngle;
+bool shifterState;
 
 int height;
 const int maxheight = 4;
